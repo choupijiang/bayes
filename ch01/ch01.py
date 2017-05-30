@@ -64,6 +64,7 @@ lambda_1 = pm.Exponential("lambda_1", alpha)
 lambda_2 = pm.Exponential("lambda_2", alpha)
 print lambda_1, lambda_2
 tau = pm.DiscreteUniform("tau", lower=0, upper=n_count_data)
+print "original output:", tau.value, tau.value, lambda_1.value, lambda_2.value
 print "Random output:", tau.random(), tau.random(), tau.random()
 
 @pm.deterministic
@@ -85,7 +86,9 @@ lambda_1_samples = mcmc.trace("lambda_1")[:]
 lambda_2_samples = mcmc.trace("lambda_2")[:]
 tau_samples = mcmc.trace("tau")[:]
 
-print "----",lambda_1_samples.size, lambda_2_samples.size, tau_samples.size
+# print "lambda_1_samples:",lambda_1_samples
+# print "lambda_2_samples:",lambda_2_samples
+# print "tau_samples:",tau_samples
 
 figsize(14.5, 10)
 ax = plt.subplot(311)
@@ -116,3 +119,31 @@ plt.xlabel(r"$\tau$ (in days)")
 plt.ylabel("Probability")
 
 plt.show()
+
+
+figsize(12.5, 5)
+N = tau_samples.shape[0]
+expected_text_per_day = np.zeros(n_count_data)
+for day in range(0, n_count_data):
+    ix = day < tau_samples
+    expected_text_per_day[day] = (lambda_1_samples[ix].sum() + lambda_2_samples[~ix].sum()) / N
+
+plt.plot(range(n_count_data), expected_text_per_day, lw=4, color="#E24A33", label="Expected number of text messages received.")
+plt.xlim(0, n_count_data)
+plt.xlabel("Day")
+plt.ylabel("Number of text messages")
+plt.title("Number of text messages received versus expected number received")
+plt.ylim(0, 60)
+plt.bar(np.arange(n_count_data), count_data, color="#348ABD", alpha=.65, label="Observed text messages per day")
+plt.legend(loc="upper left")
+plt.show()
+
+print (lambda_1_samples < lambda_2_samples)
+
+print (lambda_1_samples < lambda_2_samples).sum()
+print lambda_1_samples.shape
+print (lambda_1_samples < lambda_2_samples).mean()
+
+for d in [1, 2, 5, 10]:
+    v = (abs(lambda_1_samples - lambda_2_samples) >= d).mean()
+    print "What is the probability the difference is larger than %d? %.2f" % (d, v)
