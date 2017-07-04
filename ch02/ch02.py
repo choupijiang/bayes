@@ -273,168 +273,168 @@ from matplotlib import pyplot as plt
 
 
 #--------------------------------------------#
-#
-# p = pm.Uniform("freq_cheating", 0, 1)
-#
-# @pm.deterministic
-# def p_skewed(p=p):
-#     return .5*p + .25
-#
-# yes_responses = pm.Binomial("number_cheaters", 100, p_skewed, value=35, observed=True)
-# print yes_responses.value
-# model = pm.Model([p, p_skewed, yes_responses])
-#
-# mcmc = pm.MCMC(model)
-#
-# mcmc.sample(25000, 2500)
-# figsize(12.5, 3)
-# p_trace = mcmc.trace("freq_cheating")[:]
-# print p_trace, p_trace.size
-# plt.hist(p_trace, histtype="stepfilled", normed=True, alpha=.85, bins=30, label="posterior distribution", color="#348ABD")
-# plt.vlines([.05, .35], [0, 0], [5, 5], alpha=.3)
-# plt.xlim(0, 1)
-# plt.xlabel("Value of $p$")
-# plt.ylabel("Density")
-# plt.title("Posterior distribution of parameter $p$")
-# plt.legend()
-# plt.show()
+
+p = pm.Uniform("freq_cheating", 0, 1)
+print p.value
+@pm.deterministic
+def p_skewed(p=p):
+    return .5*p + .25
+
+yes_responses = pm.Binomial("number_cheaters", 100, p_skewed, value=35, observed=True)
+print yes_responses.value
+model = pm.Model([p, p_skewed, yes_responses])
+
+mcmc = pm.MCMC(model)
+
+mcmc.sample(25000, 2500)
+figsize(12.5, 3)
+p_trace = mcmc.trace("freq_cheating")[:]
+print p_trace, p_trace.size
+plt.hist(p_trace, histtype="stepfilled", normed=True, alpha=.85, bins=30, label="posterior distribution", color="#348ABD")
+plt.vlines([.05, .35], [0, 0], [5, 5], alpha=.3)
+plt.xlim(0, 1)
+plt.xlabel("Value of $p$")
+plt.ylabel("Density")
+plt.title("Posterior distribution of parameter $p$")
+plt.legend()
+plt.show()
 
 ###====================================================================##
 
-
-def logistic(x, beta, alpha=0):
-    return 1.0 / (1.0 + np.exp(np.dot(beta, x) + alpha))
-
-
-np.set_printoptions(precision=3, suppress=True)
-challenger_data = np.genfromtxt("challenger_data.csv", skip_header=1, usecols=[1, 2], missing_values="NA", delimiter=",")
-
-challenger_data= challenger_data[~np.isnan(challenger_data[:, 1])]
-# print challenger_data
-
-# figsize(12.5, 3.5)
-# plt.scatter(challenger_data[:, 0], challenger_data[:, 1], s=75, color="k", alpha=.75)
-# plt.yticks([0, 1])
-# plt.ylabel("Damage incident")
-# plt.xlabel("Outside temp ")
-# plt.title("Defects of the space shuttle O-rings versus temp")
-# plt.show()
-
-import pymc as pm
-temprature = challenger_data[:, 0]
-D = challenger_data[:, 1]
-
-beta = pm.Normal("beta", 0, 0.001, value=0)
-alpha = pm.Normal("alpha", 0, 0.001, value=0)
-
-
-@pm.deterministic
-def p(t=temprature, alpha=alpha, beta=beta):
-    return 1.0/(1. + np.exp(beta*t + alpha))
-# print p.value
-
-observed = pm.Bernoulli("bernoulli_obs", p, value=D, observed=True)
-model = pm.Model([observed, beta, alpha])
-# print model
-map_ = pm.MAP(model)
-map_.fit()
-mcmc = pm.MCMC(model)
-mcmc.sample(120000, 100000, 2)
-
-alpha_samples = mcmc.trace('alpha')[:, None]
-# print alpha_samples
-beta_samples = mcmc.trace('beta')[:, None]
-# print beta_samples
-
-# figsize(12.5, 6)
 #
-# plt.subplot(211)
-# plt.title("Posterior distributions of the model parameters  alpha , beta")
-# plt.hist(beta_samples, histtype="stepfilled", bins=35, alpha=.85, label="posterior of  beta  " , color="#7A68A6", normed=True)
-# plt.legend()
+# def logistic(x, beta, alpha=0):
+#     return 1.0 / (1.0 + np.exp(np.dot(beta, x) + alpha))
 #
-# plt.subplot(212)
-# plt.hist(alpha_samples, histtype="stepfilled", bins=35, alpha=.85, label="posterior of alpha ", color="#A60638", normed=True)
-# plt.xlabel("Value pf params")
-# plt.ylabel("Density")
-# plt.legend()
-# plt.show()
-
-t = np.linspace(temprature.min() - 5, temprature.max() + 5, 50)[:, None]
-p_t = logistic(t.T, beta_samples, alpha_samples)
-mean_prob_t = p_t.mean(axis=0)
-# print mean_prob_t.shape, mean_prob_t
-# figsize(12.5, 4)
-# plt.plot(t, mean_prob_t, lw=3, label="average posterior \nprobability of defect")
-# plt.plot(t, p_t[0, :], ls="--", label="realization from posterior")
-# plt.plot(t, p_t[-2, :], ls="--", label="realization from posterior")
-# plt.scatter(temprature, D, color="k", s=50, alpha=.5)
-# plt.title("Posterior expected value of the prob of defect, including two realizations")
-# plt.legend(loc="upper left")
-# plt.ylim(-0.1, 1.1)
-# plt.xlim(t.min(), t.max())
-# plt.ylabel("Prob")
-# plt.xlabel("Temperature")
-# plt.show()
-
-# from scipy.stats.mstats import mquantiles
-# qs = mquantiles(p_t, [0.025, 0.975], axis=0)
-# plt.fill_between(t[:, 0], *qs, alpha=0.7, color="#7A68A6")
-# plt.plot(t, qs[0], label="95% CI", color="#7A68A6", alpha=.7)
-# plt.plot(t, mean_prob_t, lw=1, ls="--", color="k", label="avaerage posterior probability of defect")
-# plt.xlim(t.min(), t.max())
-# plt.ylim(-0.02, 1.02)
-# plt.legend(loc="lower left")
-# plt.scatter(temprature, D, color="k", s=50, alpha=.5)
-# plt.ylabel("Prob")
-# plt.xlabel("Temperature")
-# plt.title("Posterior prob of estimates, given temperature $t$")
-
-# figsize(12.5, 2.5)
-# prob_31 = logistic(31, beta_samples, alpha_samples)
-# plt.xlim(0.995, 1)
 #
-# plt.hist(prob_31, bins=1000, normed=True, histtype="stepfilled")
-# plt.title("posterior distribution of probability of defect, given $t = 31$")
-# plt.ylabel("Density")
-# plt.xlabel("Prob of defect occurring in O-ring")
-# plt.show()
-###################################################################
-
-###模拟
-simulated_data = pm.Bernoulli("simulation_data", p)
-
-simulated = pm.Bernoulli("bernoulli_sim", p)
-N = 10000
-mcmc = pm.MCMC([simulated, alpha, beta, observed])
-mcmc.sample(N)
-
-figsize(12.5, 5)
-simulations = mcmc.trace("bernoulli_sim")[:].astype(int)
-print "Shape of simulations array:", simulations.shape
-# figsize(12.5, 6)
-# for i in range(4):
-#     ax = plt.subplot(4, 1, i+1)
-#     print simulations[1000*i, :]
-#     plt.scatter(temprature, simulations[1000*i, :], color="k", s=50, alpha=.6)
-# plt.show()
-
-###########################################################################################
-
-##分离图
-
-posterior_probability = simulations.mean(axis=0)
-print posterior_probability
-
-print "Obs.| Array of simulated Defects     | Posterior Prob of Defect | Realized Defect."
-
-for i in range(len(D)):
-    print "%s  | %s |  %.2f               | %d  " %(str(i).zfill(2), str(simulations[:10, i])[:-1] + "...]".ljust(12), posterior_probability[i] ,D[i])
-
-
-ix = np.argsort(posterior_probability)
-print ix
-print "Posterior Probability of Defect | Realized Defect"
-for i in range(len(D)):
-    print "%.2f                            |   %d" % (posterior_probability[ix[i]], D[ix[i]])
-
+# np.set_printoptions(precision=3, suppress=True)
+# challenger_data = np.genfromtxt("challenger_data.csv", skip_header=1, usecols=[1, 2], missing_values="NA", delimiter=",")
+#
+# challenger_data= challenger_data[~np.isnan(challenger_data[:, 1])]
+# # print challenger_data
+#
+# # figsize(12.5, 3.5)
+# # plt.scatter(challenger_data[:, 0], challenger_data[:, 1], s=75, color="k", alpha=.75)
+# # plt.yticks([0, 1])
+# # plt.ylabel("Damage incident")
+# # plt.xlabel("Outside temp ")
+# # plt.title("Defects of the space shuttle O-rings versus temp")
+# # plt.show()
+#
+# import pymc as pm
+# temprature = challenger_data[:, 0]
+# D = challenger_data[:, 1]
+#
+# beta = pm.Normal("beta", 0, 0.001, value=0)
+# alpha = pm.Normal("alpha", 0, 0.001, value=0)
+#
+#
+# @pm.deterministic
+# def p(t=temprature, alpha=alpha, beta=beta):
+#     return 1.0/(1. + np.exp(beta*t + alpha))
+# # print p.value
+#
+# observed = pm.Bernoulli("bernoulli_obs", p, value=D, observed=True)
+# model = pm.Model([observed, beta, alpha])
+# # print model
+# map_ = pm.MAP(model)
+# map_.fit()
+# mcmc = pm.MCMC(model)
+# mcmc.sample(120000, 100000, 2)
+#
+# alpha_samples = mcmc.trace('alpha')[:, None]
+# # print alpha_samples
+# beta_samples = mcmc.trace('beta')[:, None]
+# # print beta_samples
+#
+# # figsize(12.5, 6)
+# #
+# # plt.subplot(211)
+# # plt.title("Posterior distributions of the model parameters  alpha , beta")
+# # plt.hist(beta_samples, histtype="stepfilled", bins=35, alpha=.85, label="posterior of  beta  " , color="#7A68A6", normed=True)
+# # plt.legend()
+# #
+# # plt.subplot(212)
+# # plt.hist(alpha_samples, histtype="stepfilled", bins=35, alpha=.85, label="posterior of alpha ", color="#A60638", normed=True)
+# # plt.xlabel("Value pf params")
+# # plt.ylabel("Density")
+# # plt.legend()
+# # plt.show()
+#
+# t = np.linspace(temprature.min() - 5, temprature.max() + 5, 50)[:, None]
+# p_t = logistic(t.T, beta_samples, alpha_samples)
+# mean_prob_t = p_t.mean(axis=0)
+# # print mean_prob_t.shape, mean_prob_t
+# # figsize(12.5, 4)
+# # plt.plot(t, mean_prob_t, lw=3, label="average posterior \nprobability of defect")
+# # plt.plot(t, p_t[0, :], ls="--", label="realization from posterior")
+# # plt.plot(t, p_t[-2, :], ls="--", label="realization from posterior")
+# # plt.scatter(temprature, D, color="k", s=50, alpha=.5)
+# # plt.title("Posterior expected value of the prob of defect, including two realizations")
+# # plt.legend(loc="upper left")
+# # plt.ylim(-0.1, 1.1)
+# # plt.xlim(t.min(), t.max())
+# # plt.ylabel("Prob")
+# # plt.xlabel("Temperature")
+# # plt.show()
+#
+# # from scipy.stats.mstats import mquantiles
+# # qs = mquantiles(p_t, [0.025, 0.975], axis=0)
+# # plt.fill_between(t[:, 0], *qs, alpha=0.7, color="#7A68A6")
+# # plt.plot(t, qs[0], label="95% CI", color="#7A68A6", alpha=.7)
+# # plt.plot(t, mean_prob_t, lw=1, ls="--", color="k", label="avaerage posterior probability of defect")
+# # plt.xlim(t.min(), t.max())
+# # plt.ylim(-0.02, 1.02)
+# # plt.legend(loc="lower left")
+# # plt.scatter(temprature, D, color="k", s=50, alpha=.5)
+# # plt.ylabel("Prob")
+# # plt.xlabel("Temperature")
+# # plt.title("Posterior prob of estimates, given temperature $t$")
+# #####################################################################
+# # figsize(12.5, 2.5)
+# # prob_31 = logistic(31, beta_samples, alpha_samples)
+# # plt.xlim(0.995, 1)
+# #
+# # plt.hist(prob_31, bins=1000, normed=True, histtype="stepfilled")
+# # plt.title("posterior distribution of probability of defect, given $t = 31$")
+# # plt.ylabel("Density")
+# # plt.xlabel("Prob of defect occurring in O-ring")
+# # plt.show()
+# ###################################################################
+#
+# ###模拟
+# simulated_data = pm.Bernoulli("simulation_data", p)
+#
+# simulated = pm.Bernoulli("bernoulli_sim", p)
+# N = 10000
+# mcmc = pm.MCMC([simulated, alpha, beta, observed])
+# mcmc.sample(N)
+#
+# figsize(12.5, 5)
+# simulations = mcmc.trace("bernoulli_sim")[:].astype(int)
+# print "Shape of simulations array:", simulations.shape
+# # figsize(12.5, 6)
+# # for i in range(4):
+# #     ax = plt.subplot(4, 1, i+1)
+# #     print simulations[1000*i, :]
+# #     plt.scatter(temprature, simulations[1000*i, :], color="k", s=50, alpha=.6)
+# # plt.show()
+#
+# ###########################################################################################
+#
+# ##分离图
+#
+# posterior_probability = simulations.mean(axis=0)
+# print posterior_probability
+#
+# print "Obs.| Array of simulated Defects     | Posterior Prob of Defect | Realized Defect."
+#
+# for i in range(len(D)):
+#     print "%s  | %s |  %.2f               | %d  " %(str(i).zfill(2), str(simulations[:10, i])[:-1] + "...]".ljust(12), posterior_probability[i] ,D[i])
+#
+#
+# ix = np.argsort(posterior_probability)
+# print ix
+# print "Posterior Probability of Defect | Realized Defect"
+# for i in range(len(D)):
+#     print "%.2f                            |   %d" % (posterior_probability[ix[i]], D[ix[i]])
+#
