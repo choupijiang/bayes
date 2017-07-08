@@ -110,5 +110,3 @@ plt.rcParams['figure.dpi'] = 300
 # )
 # plt.legend(scatterpoints = 1)
 # plt.show()
-
-n_comments = len(contents)
